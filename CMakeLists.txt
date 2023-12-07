@@ -11,4 +11,6 @@ add_executable(GameOfLife main.cpp
         StateObserver.cpp
         StateObserver.h
         Game.cpp
-        Game.h)
+        Game.h
+        Printer.cpp
+        Printer.h)

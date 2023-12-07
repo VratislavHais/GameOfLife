@@ -5,21 +5,20 @@
 #include "Game.h"
 #include <vector>
 
-Game::Game(int boardSize) : board(Board(boardSize)) {
+Game::Game(int boardSize) : board(Board(boardSize)), printer(Printer(&board)) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> distributionClusters(1, boardSize);
-    std::uniform_int_distribution<int> distributionClusterSize(1, 3);
+    std::uniform_int_distribution<int> distributionBoardSize(1, boardSize);
+    std::uniform_int_distribution<int> distributionClusterSize(3, 9);
     std::uniform_int_distribution<int> distributionPosition(-1, 1);
-    int numberOfClustersToGenerate = distributionClusters(gen);
+    int numberOfClustersToGenerate = distributionBoardSize(gen) * 2;
     while (numberOfClustersToGenerate > 0) {
-        GenerateCluster(gen, distributionClusterSize(gen));
+        GenerateCluster(gen, distributionClusterSize(gen), distributionBoardSize(gen), distributionBoardSize(gen));
         numberOfClustersToGenerate--;
     }
-    std::cout << "Done initializing\n";
 }
 
-void Game::GenerateCluster(std::mt19937 gen, int clusterSize) {
+void Game::GenerateCluster(std::mt19937 gen, int clusterSize, int rootRow, int rootCol) {
     vector<vector<int>> positions = {
             {-1, -1},
             {-1, 0},
@@ -36,12 +35,12 @@ void Game::GenerateCluster(std::mt19937 gen, int clusterSize) {
         if (positions.size() > 4) {
             std::uniform_int_distribution<int> distribution(0, static_cast<int>(positions.size())-1);
             int index = distribution(gen);
-            row = positions[index][0];
-            col = positions[index][1];
+            row = rootRow + positions[index][0];
+            col = rootCol + positions[index][1];
             positions.erase(positions.begin() + index);
         } else {
-            row = positions[0][0];
-            col = positions[0][1];
+            row = rootRow + positions[0][0];
+            col = rootCol + positions[0][1];
             positions.erase(positions.begin());
         }
         if (row >= 0 && row < board.GetBoardSize() && col >= 0 && col < board.GetBoardSize()) {
@@ -72,16 +71,13 @@ void Game::NextGeneration() {
             }
         }
     }
+    stateObserver.execute();
 }
 
 void Game::Play() {
-    int turnsElapsed = 0;
     while (aliveCells > 0) {
         NextGeneration();
-        if (turnsElapsed > 10) {
-            break;
-        }
-        turnsElapsed++;
+        printer.printGeneration();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    std::cout << "Generations elapsed: " << turnsElapsed << '\n';
 }
